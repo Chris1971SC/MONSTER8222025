@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stream Aggregator — MONSTER8222025</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; margin:0; background: #181526; color: #fff; }
+    .login, .main { max-width: 420px; margin: auto; padding: 2em 1em; }
+    input, button { font-size: 1.1em; padding: .5em; border-radius: .4em; border:none; margin-bottom:.75em;}
+    .video-card { background: #272146; margin: .5em 0; padding: 1em; border-radius:.7em; display:flex; align-items:center; gap:1em;}
+    .video-card img { width: 60px; height: 90px; object-fit:cover; border-radius:.4em; }
+    .video-card button { margin-left:auto;}
+    #playerbox { margin-top:1.2em;}
+    #search { width: 100%; margin:1em 0; }
+    .source-badge { background: #c0f; color:#fff; font-weight:bold; font-size:.85em; border-radius:.3em; padding:0.05em 0.6em; margin-left:0.2em;}
+    .section-title { margin-top: 2em; font-weight: bold; color: #c0f; }
+    .caption { color:#aaa; font-size: .95em;}
+    @media (max-width:500px) {
+      .video-card { flex-direction:column; align-items:flex-start;}
+      .video-card img { width:95%; max-width:180px; height:auto;}
+      .video-card button { width:100%; font-size:1em; margin-top:.5em;}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="login" id="loginbox">
+    <h2>Login</h2>
+    <input id="loginInput" placeholder="Enter your passphrase or profile name" autocomplete="off"/>
+    <button onclick="login()">Enter</button>
+    <div class="caption">Each user picks a unique passphrase/profile name.<br>Use this on all your devices to keep progress synced.</div>
+  </div>
+  <div class="main" id="mainbox" style="display:none;">
+    <h2>Welcome, <span id="profilename"></span></h2>
+    <input id="search" placeholder="Search movies, TV, etc..." oninput="searchVids()"/>
+    <div class="section-title">Continue watching</div>
+    <div id="continueList"></div>
+    <div class="section-title">Browse all</div>
+    <div id="vidList"></div>
+    <div id="playerbox"></div>
+  </div>
+</div>
+<script>
+let ALL_VIDS = [], PROGRESS = [], USER = null, CURRENT_PLAY = null;
+const api = (e, meth='GET', data=null) =>
+  fetch(e, {
+      method: meth,
+      credentials: 'include',
+      headers: {'Content-Type':'application/json'},
+      ...(data ? {body: JSON.stringify(data)} : {})
+  }).then(r => r.json());
+
+function login() {
+  const passphrase = loginInput.value.trim();
+  if (passphrase.length < 2) return alert("Use a longer passphrase!");
+  api('/api/login', 'POST', {passphrase}).then(x => {
+    if (x.error) return alert(x.error);
+    USER = x.user;
+    document.getElementById('profilename').textContent = USER.profile;
+    loginbox.style.display='none';
+    mainbox.style.display='';
+    loadAll();
+  });
+}
+
+async function loadAll() {
+  ALL_VIDS = await api('/api/videos');
+  PROGRESS = await api('/api/progress');
+  renderLists();
+}
+
+function renderLists() {
+  // Continue watching
+  let cl = document.getElementById('continueList');
+  cl.innerHTML = (PROGRESS && PROGRESS.length) ?
+    PROGRESS.sort((a,b)=>(b.lastWatched>a.lastWatched?-1:1)).map(v=>
+      `<div class='video-card'>
+        <img src="${v.poster || ''}" alt="">
+        <div>
+          <div>${v.title || "No Title"} <span class="source-badge">${v.source||''}</span></div>
+          <div class="caption">Last at ${fmtTime(v.lastTime||0)}</div>
+        </div>
+        <button onclick="playVid('${v.url}')">Resume</button>
+       </div>`
+    ).join('') : "<div class='caption'>No history yet</div>";
+  // All videos
+  let vl = document.getElementById('vidList');
+  vl.innerHTML = (ALL_VIDS && ALL_VIDS.length) ?
+    ALL_VIDS.map(v=>
+      `<div class='video-card'>
+         <img src="${v.poster || ''}" alt="">
+         <div>
+           <div>${v.title || "No Title"} <span class="source-badge">${v.source||''}</span></div>
+         </div>
+         <button onclick="playVid('${v.url}')">Play</button>
+       </div>`
+    ).join('') : "<div class='caption'>No video entries (scraper is running...)</div>";
+}
+function searchVids() {
+  const q = search.value.toLowerCase();
+  document.getElementById('vidList').innerHTML =
+    ALL_VIDS.filter(v=>v.title && v.title.toLowerCase().includes(q)).map(v=>
+      `<div class='video-card'>
+         <img src="${v.poster || ''}" alt="">
+         <div>
+           <div>${v.title || "No Title"} <span class="source-badge">${v.source||''}</span></div>
+         </div>
+         <button onclick="playVid('${v.url}')">Play</button>
+       </div>`
+    ).join('');
+}
+function playVid(url) {
+  const v = ALL_VIDS.find(vi=>vi.url === url) || PROGRESS.find(vi=>vi.url===url);
+  CURRENT_PLAY = v;
+  let lastTime = v.lastTime||0;
+  document.getElementById('playerbox').innerHTML = `
+    <div style="margin:1em 0;">
+      <div style="font-weight:bold; color:#c0f;">${v.title} <span class="source-badge">${v.source||''}</span></div>
+      <iframe src="${url}" style="width:98%;height:260px;border-radius:1em;margin:1em 0;background:#000;" sandbox="allow-same-origin allow-scripts"></iframe>
+      <div>
+        <button onclick="markProgress(0)">Start over</button>
+        <button onclick="closePlayer()">Close</button>
+      </div>
+    </div>
+  `;
+  setTimeout(() => {
+    // Simulate "continue watching" (could expand to true progress later)
+    markProgress(lastTime);
+  }, 500);
+}
+function closePlayer() {
+  document.getElementById('playerbox').innerHTML = '';
+  CURRENT_PLAY = null;
+}
+function markProgress(t) {
+  if (!CURRENT_PLAY) return;
+  api('/api/progress', 'POST', {
+    url: CURRENT_PLAY.url, lastTime: t||0
+  });
+}
+function fmtTime(sec) {
+  let m = Math.floor(sec/60), s = sec%60;
+  return `${m}:${s<10?'0':''}${s}`;
+}
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>
