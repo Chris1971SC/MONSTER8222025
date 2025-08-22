@@ -17,4 +17,4 @@
 
 **Now you have a true private streaming tracker/aggregator. Open from anywhere, share with trusted family, and your progress is always safe!**
 
-Need more sources, custom logos/themes, or an allowlist for tighter user control? Just ask!
+Need more sources, custom logos/themes, or an allowlist for tighter user control? Just ask and shit.
