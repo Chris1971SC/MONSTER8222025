@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mySite</title>
+
+    <link rel="icon" type="image/x-icon" href="https://heather2025.nekoweb.org/images/favicon.ico">
+    <link href="https://fonts.cdnfonts.com/css/pecita" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Pecita&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(to bottom right, #0d1117, #6b46c1, #d8b4fe);
+            color: #e6edf3;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Video Modal */
+        #videoModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #videoModal.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #videoModal .modal-content {
+            background: #161b22;
+            border-radius: 12px;
+            max-width: 900px;
+            width: 95%;
+            padding: 1.5rem;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+            max-height: 85vh;
+            /* Set max height for scrolling */
+            overflow-y: auto;
+            /* Enable vertical scrolling */
+        }
+
+        #videoModal.visible .modal-content {
+            transform: scale(1);
+        }
+
+        #videoModal .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        #videoModal .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Video Player & Controls Layout */
+        .player-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .player-wrapper {
+                flex-direction: row;
+            }
+        }
+
+        .player-main {
+            flex: 1;
+        }
+
+        .player-sidebar {
+            width: 100%;
+            max-height: 400px;
+            /* Limit height for smaller screens */
+            overflow-y: auto;
+            border-radius: 8px;
+            background-color: #0d1117;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .player-sidebar {
+                width: 300px;
+                max-height: none;
+                /* Remove height limit for larger screens */
+            }
+        }
+
+        .gallery-container {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            margin-top: 1.5rem;
+        }
+
+        .gallery-card {
+            background: #161b22;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            /* ADDED: For banner positioning */
+            display: flex;
+            /* ADDED: To ensure content fills height */
+            flex-direction: column;
+            /* ADDED: To ensure content fills height */
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .gallery-card img {
+            width: 100%;
+            height: 225px;
+            /* Aspect ratio for posters (2:3) */
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 0.75rem;
+            flex-grow: 1;
+            /* ADDED: To ensure content fills height */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-info p {
+            font-size: 0.8rem;
+            color: #8b949e;
+        }
+
+        .button-group .active {
+            background-color: #2e8b57;
+            color: #fff;
+        }
+
+        .button-group .inactive {
+            background-color: #21262d;
+            color: #8b949e;
+        }
+
+        .button-group button {
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+        .continue-watching-card {
+            display: flex;
+            background: #1f242c;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+        }
+
+        .continue-watching-card:hover {
+            transform: translateX(5px);
+        }
+
+        .continue-watching-card .image-container {
+            position: relative;
+            width: 80px;
+            height: 120px;
+            flex-shrink: 0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .continue-watching-card .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .continue-watching-card .title-area {
+            flex-grow: 1;
+            padding-left: 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .continue-watching-card .title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            color: #c9d1d9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .continue-watching-card .progress {
+            font-size: 0.8rem;
+            color: #8b949e;
+        }
+
+        .continue-watching-card .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 1rem;
+            line-height: 1;
+            text-align: center;
+            cursor: pointer;
+            opacity: 1;
+            transition: opacity 0.2s;
+        }
+
+        .nav-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-button.active {
+            background-color: #d8b4fe;
+            /* Purple-300 */
+            color: #000;
+        }
+
+        .nav-button.inactive {
+            background-color: #21262d;
+            color: #8b949e;
+        }
+
+        /* NEW RELEASE CARD STYLES */
+        .new-release-card {
+            display: flex;
+            flex-direction: column;
+            width: 120px;
+            /* Boxy avatar size */
+            height: 160px;
+            /* Boxy avatar size */
+            background: #161b22;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            flex-shrink: 0;
+            /* Prevent items from shrinking */
+        }
+
+        .new-release-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .new-release-card .image-container {
+            width: 100%;
+            height: 70%;
+            overflow: hidden;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .new-release-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .new-release-card .card-info {
+            padding: 0.5rem;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .new-release-card .card-info h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.25rem;
+        }
+
+        .new-release-card .card-info p {
+            font-size: 0.7rem;
+            color: #8b949e;
+        }
+
+        /* ADDED ANIMATION AND BANNER STYLES */
+        @keyframes pulse-banner {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.08);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .animate-pulse-banner {
+            animation: pulse-banner 2s infinite ease-in-out;
+        }
+
+        /* Mobile-specific styles for better layout */
+        @media (max-width: 767px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header .flex-col {
+                width: 100%;
+            }
+
+            .header .flex-row {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            #searchInput {
+                width: 100%;
+            }
+
+            .nav-button {
+                flex: 1;
+                padding: 0.5rem;
+                font-size: 0.9rem;
+            }
+
+            .nav-button svg {
+                display: none;
+            }
+
+            .new-release-card {
+                width: 100px;
+                height: 140px;
+            }
+
+            .new-release-card .card-info h3 {
+                font-size: 0.7rem;
+            }
+
+            .new-release-card .card-info p {
+                font-size: 0.6rem;
+            }
+
+            .gallery-container {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+                gap: 1rem;
+            }
+
+            .gallery-card img {
+                height: 150px;
+            }
+
+            .gallery-card h3 {
+                font-size: 0.8rem;
+            }
+
+            .gallery-card p {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-black via-purple-500 to-purple-200 text-gray-100">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        pecita: ['Pecita', 'cursive'],
+                    },
+                    colors: {
+                        'primary-purple': '#a78bfa',
+                        'dark-purple': '#4c1d95',
+                        'light-purple': '#c4b5fd',
+                        'background-dark': '#111827',
+                        'background-light': '#374151',
+                    },
+                },
+            },
+        }
+    </script>
+
+    <div class="container py-8">
+        <header class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+            <h1 class="text-4xl font-bold text-purple-300 font-pecita">
+                my Site
+            </h1>
+            <div class="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                <div class="relative w-full md:w-auto">
+                    <input type="text" id="searchInput" placeholder="Search for movies or TV shows..."
+                        class="w-full md:w-80 p-3 pl-10 bg-gray-800 rounded-full text-white focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all duration-300" />
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="currentColor"
+                        viewBox="0 0 20 20">
+                        <path fill-rule="evenodd"
+                            d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                            clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <div class="flex gap-2 w-full md:w-auto">
+                    <button id="showMoviesBtn" class="nav-button active">
+                        <svg class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                        Movies
+                    </button>
+                    <button id="showTvBtn" class="nav-button inactive">
+                        <svg class="h-6 w-6 mr-2" fill="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path d="M21 3H3a2 2 0 00-2 2v12a2 2 0 002 2h5v1h8v-1h5a2 2 0 002-2V5a2 2 0 00-2-2zm-1 14H4V6h16v11z" />
+                        </svg>
+                        TV Shows
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <section id="continueWatchingSection" class="mt-8 mb-8" style="display: none;">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-semibold">Continue Watching</h2>
+            </div>
+            <div id="continueWatchingContainer" class="flex flex-wrap gap-4 mt-4"></div>
+        </section>
+
+        <section id="newReleasesSection" class="mt-8 mb-8">
+            <div class="flex flex-col md:flex-row items-center justify-between mb-4">
+                <h2 class="text-2xl font-semibold mb-2 md:mb-0">New Releases This Week</h2>
+                <div class="flex items-center gap-2">
+                    <button id="prevReleaseDayBtn"
+                        class="p-2 bg-gray-700 rounded-full text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <span id="releaseDateInfo" class="text-sm font-semibold text-gray-100"></span>
+                    <button id="nextReleaseDayBtn"
+                        class="p-2 bg-gray-700 rounded-full text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex gap-2 mb-4">
+                <button id="showNewReleaseMoviesBtn" class="nav-button active">
+                    Movies
+                </button>
+                <button id="showNewReleaseTvBtn" class="nav-button inactive">
+                    TV Shows
+                </button>
+            </div>
+            <div id="newReleasesContainer" class="flex gap-4 overflow-x-auto py-2"></div>
+        </section>
+
+        <main class="mt-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="galleryTitle" class="text-2xl font-semibold">
+                    Popular Movies
+                </h2>
+                <div class="flex items-center gap-2">
+                    <button id="prevPage"
+                        class="p-2 bg-gray-700 rounded-full text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <span id="pageInfo" class="text-gray-100 text-sm"></span>
+                    <button id="nextPage"
+                        class="p-2 bg-gray-700 rounded-full text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div id="galleryContainer" class="gallery-container"></div>
+            <div class="flex items-center justify-end mt-6">
+                <div class="flex items-center gap-2">
+                    <button id="prevPageBottom"
+                        class="p-2 bg-gray-700 rounded-full text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <span id="pageInfoBottom" class="text-gray-100 text-sm"></span>
+                    <button id="nextPageBottom"
+                        class="p-2 bg-gray-700 rounded-full text-white hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="videoModal" class="hidden">
+        <div class="modal-content">
+            <button id="modalCloseBtn" class="close-btn">&times;</button>
+            <h2 id="modalTitle" class="text-xl md:text-2xl font-bold mb-4"></h2>
+            <div class="player-wrapper">
+                <div class="player-main">
+                    <div id="iframeContainer"
+                        class="relative w-full h-0 pb-[56.25%] rounded-lg overflow-hidden bg-black"></div>
+                    <div class="p-4 bg-gray-800 rounded-lg mt-4">
+                        <h3 id="nowPlaying" class="text-lg font-semibold text-white"></h3>
+                        <p id="summary" class="text-sm text-gray-400 mt-2"></p>
+                    </div>
+                </div>
+
+                <div class="player-sidebar">
+                    <div class="flex flex-col gap-4">
+                        <div class="flex flex-col">
+                            <label for="sourceSelector" class="text-sm text-gray-400 mb-1">
+                                Select Source
+                            </label>
+                            <div class="flex gap-2">
+                                <select id="sourceSelector"
+                                    class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-300"></select>
+                                <button id="trailerBtn"
+                                    class="py-2 px-4 bg-red-600 rounded-lg text-white hover:bg-red-700 transition duration-200">
+                                    Trailer
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <button id="showNoSandboxBtn"
+                                class="flex-1 py-2 px-4 rounded-lg font-semibold transition-colors duration-200 active ring-2 ring-purple-300">
+                                Sources w/o Popups
+                            </button>
+                            <button id="showSandboxBtn"
+                                class="flex-1 py-2 px-4 rounded-lg font-semibold transition-colors duration-200 inactive">
+                                Sources w/ Popups
+                            </button>
+                        </div>
+
+                        <div id="episodeSelector" class="flex flex-col gap-4 hidden">
+                            <div class="flex flex-col">
+                                <label for="seasonSelect" class="text-sm text-gray-400 mb-1">
+                                    Season
+                                </label>
+                                <select id="seasonSelect"
+                                    class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-300"></select>
+                            </div>
+                            <div class="flex flex-col">
+                                <label for="episodeSelect" class="text-sm text-gray-400 mb-1">
+                                    Episode
+                                </label>
+                                <select id="episodeSelect"
+                                    class="w-full px-3 py-2 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-300"></select>
+                            </div>
+                        </div>
+
+                        <div id="episodeNavButtons" class="flex gap-2 hidden">
+                            <button id="prevEpisodeBtn"
+                                class="flex-1 py-2 px-4 bg-purple-300 rounded-lg text-black hover:bg-purple-400 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Previous
+                            </button>
+                            <button id="nextEpisodeBtn"
+                                class="flex-1 py-2 px-4 bg-purple-300 rounded-lg text-black hover:bg-purple-400 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://unpkg.com/parse@4.0.0/dist/parse.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
